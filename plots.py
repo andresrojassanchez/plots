@@ -25,9 +25,13 @@ import xlutils
 import copy
 from openpyxl import load_workbook
 from openpyxl import Workbook
-import tkFileDialog 
-from Tkinter import *
-import tkMessageBox
+import tkinter.filedialog 
+from tkinter import messagebox
+from tkinter import *
+from tkinter.filedialog import askopenfilename
+import numpy.core._methods
+import numpy.lib.format
+
 
 # Function to append/add the data to an existing template.
 def append_df_to_excel(filename, df, sheet_name='Sheet1', startrow=None,
@@ -100,17 +104,24 @@ def append_df_to_excel(filename, df, sheet_name='Sheet1', startrow=None,
 # .csv files of raw data.
 root = Tk()
 root.withdraw()
-dirname = tkFileDialog.askdirectory(parent=root, initialdir="/",
-                                    title='Please select a directory')
+messagebox.showinfo("Natural/Daily Plot Generator", "Written by Andres R.S. of Acumen for Gannett Flemming")
+csvdirname = filedialog.askdirectory(parent=root, initialdir="/",
+                                    title='Select the directory that contains the .csv files')
+
+messagebox.showinfo("Select an Excel Template" ,"Select an Excel template to populate post-processing.")
+
+template = askopenfilename()
+
 
 # Collects all files ending with .csv into a list for processing.
-files = [file for file in os.listdir(dirname) if file.endswith(".csv")]
-print(files)
+files = [file for file in os.listdir(csvdirname) if file.endswith(".csv")]
 # Iterates through the every file found ending with .csv
 for file in files:
+
+    os.makedirs(csvdirname + '/plots', exist_ok=True)
+
     # Read the csv data into a pandas dataframe; skipping the first 11 rows
-    print(dirname)
-    df = pd.read_csv(dirname + '/' + file, skiprows = 11)
+    df = pd.read_csv(csvdirname + '/' + file, skiprows = 11)
 
     # Change the TIME column to standard datetime format for resampling
     df['TIME'] = pd.to_datetime(df['TIME'])
@@ -127,13 +138,22 @@ for file in files:
     # Create the outputfilename by add _natural_plot to the raw csv data
     output_filename = os.path.splitext(file)[0] + '_natural_plot.xlsx'
 
-    # Template selection. If a new template is desired, create another if 
-    # state with the number of columns that the template has. Defaults to 9,
-    # which is the old .csv format.
+    # Template selection.
+    # Make a new copy of the template with the output filename        
+    shutil.copy(template, csvdirname + '/plots/' + output_filename)
+
+    # Add the processed data into the copied excel file
+    append_df_to_excel(csvdirname + '/plots/' + output_filename, df, sheet_name = 'data', \
+                        startrow = 19)
+    
+    print('Complete:', output_filename)
+    
+    # Old code without selection; might redo after talking with Arthur
+    '''
     if len(df.columns) == 6:    
     
         # Get the path of the template for the copy operation
-        template = os.path.join(os.path.dirname(os.path.realpath(__file__)), \
+        template = os.path.join(os.path.csvdirname(os.path.realpath(__file__)), \
                                 'new_natural_template.xlsx')
         # Make a new copy of the template with the output filename        
         shutil.copy(template, output_filename)
@@ -143,13 +163,15 @@ for file in files:
                            startrow = 19)
     # Same as above.
     else:
-        template = os.path.join(os.path.dirname(os.path.realpath(__file__)), \
+        template = os.path.join(os.path.csvdirname(os.path.realpath(__file__)), \
                                 'old_natural_template.xlsx')
         shutil.copy(template, output_filename)
         append_df_to_excel(output_filename, df, sheet_name = 'data', \
                            startrow = 19)
+    '''
 
-if plots == 'plots': main()
+messagebox.showinfo("Complete." ,"The plots have been generated.")
+
 
 '''
 # GOOGLE SHEETS
